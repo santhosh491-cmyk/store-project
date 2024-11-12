@@ -6,6 +6,7 @@ import axios from "axios";
 function App() {
   const [data, setData] = useState([]);
   const [cart, setCart] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
 
   const fetchData = async () => {
     const response = await axios.get("https://fakestoreapi.com/products");
@@ -17,17 +18,25 @@ function App() {
   }, []);
 
   const addToCart = (item) => {
-    setCart([...cart, item]);
+    if (!cart.find((cartItem) => cartItem.id === item.id)) {
+      setCart([...cart, item]);
+    }
   };
 
-  const removeFromCart = (itemId) => {
-    setCart(cart.filter((item) => item.id !== itemId));
+  const addToWishlist = (item) => {
+    if (!wishlist.find((wishItem) => wishItem.id === item.id)) {
+      setWishlist([...wishlist, item]);
+    }
+  };
+
+  const removeFromWishlist = (id) => {
+    setWishlist(wishlist.filter((item) => item.id !== id));
   };
 
   return (
     <Router>
       <div className="container-fluid d-flex flex-column min-vh-100">
-        <div className="navbar d-flex justify-content-between align-items-center p-3 bg-light">
+        <div className="navbar d-flex justify-content-between align-items-center p-3 bg-light sticky-top">
           <nav className="navSection d-flex justify-content-between w-100">
             <div className="logo">
               <img
@@ -46,6 +55,11 @@ function App() {
                 <li>
                   <Link to="/cart" className="cart">
                     Cart ({cart.length})
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/wishlist" className="wishlist">
+                    Wishlist ({wishlist.length})
                   </Link>
                 </li>
               </ul>
@@ -74,12 +88,28 @@ function App() {
                         ${item.price}
                       </p>
                       <h5 className="card-title text-center">{item.title}</h5>
-                      <div className="d-flex justify-content-center">
+                      <div className="d-flex justify-content-center gap-2">
                         <button
                           className="btn btn-primary"
                           onClick={() => addToCart(item)}
+                          disabled={cart.some(
+                            (cartItem) => cartItem.id === item.id
+                          )}
                         >
-                          + Add to cart
+                          {cart.some((cartItem) => cartItem.id === item.id)
+                            ? "Added to Cart"
+                            : "+ Add to Cart"}
+                        </button>
+                        <button
+                          className="btn btn-warning"
+                          onClick={() => addToWishlist(item)}
+                          disabled={wishlist.some(
+                            (wishItem) => wishItem.id === item.id
+                          )}
+                        >
+                          {wishlist.some((wishItem) => wishItem.id === item.id)
+                            ? "Added to Wishlist"
+                            : "+ Add to Wishlist"}
                         </button>
                       </div>
                     </div>
@@ -88,9 +118,16 @@ function App() {
               </div>
             }
           />
+          <Route path="/cart" element={<CartPage cart={cart} />} />
           <Route
-            path="/cart"
-            element={<CartPage cart={cart} removeFromCart={removeFromCart} />}
+            path="/wishlist"
+            element={
+              <WishlistPage
+                wishlist={wishlist}
+                removeFromWishlist={removeFromWishlist}
+                addToCart={addToCart}
+              />
+            }
           />
         </Routes>
 
@@ -102,7 +139,7 @@ function App() {
   );
 }
 
-function CartPage({ cart, removeFromCart }) {
+function CartPage({ cart }) {
   const handlePlaceOrder = () => {
     alert("Your order has been placed successfully!");
   };
@@ -131,26 +168,61 @@ function CartPage({ cart, removeFromCart }) {
                 <div className="card-body">
                   <p className="card-text text-center fs-5">${item.price}</p>
                   <h5 className="card-title text-center">{item.title}</h5>
-                  <div className="d-flex justify-content-center">
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      Remove From Cart
-                    </button>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
-
           <div className="text-center mt-4">
-            <p className="fs-4">Total Price: ${totalPrice}</p>
+            <p className="fs-5">Total Price: ${totalPrice.toFixed(2)}</p>
             <button className="btn btn-success" onClick={handlePlaceOrder}>
               Place Order
             </button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function WishlistPage({ wishlist, removeFromWishlist, addToCart }) {
+  return (
+    <div className="container mt-4">
+      <h2 className="text-center">Your Wishlist</h2>
+      {wishlist.length === 0 ? (
+        <div className="text-center fs-4">Your wishlist is empty.</div>
+      ) : (
+        <div className="d-flex flex-wrap justify-content-center gap-4">
+          {wishlist.map((item, index) => (
+            <div
+              key={index}
+              className="card"
+              style={{ width: "18rem", maxWidth: "100%" }}
+            >
+              <img src={item.image} className="card-img-top" alt={item.title} />
+              <div className="card-body">
+                <p className="card-text text-center fs-5">${item.price}</p>
+                <h5 className="card-title text-center">{item.title}</h5>
+                <div className="d-flex justify-content-center gap-2 mt-2">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => removeFromWishlist(item.id)}
+                  >
+                    Remove from Wishlist
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      addToCart(item);
+                      removeFromWishlist(item.id);
+                    }}
+                  >
+                    Move to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
