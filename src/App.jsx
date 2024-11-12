@@ -18,8 +18,20 @@ function App() {
   }, []);
 
   const addToCart = (item) => {
-    if (!cart.find((cartItem) => cartItem.id === item.id)) {
-      setCart([...cart, item]);
+    const existingItem = cart.find((cartItem) => cartItem.id === item.id);
+
+    if (existingItem) {
+      // If the item already exists in the cart, increase the quantity
+      setCart(
+        cart.map((cartItem) =>
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
+        )
+      );
+    } else {
+      // If the item is not in the cart, add it with quantity 1
+      setCart([...cart, { ...item, quantity: 1 }]);
     }
   };
 
@@ -54,7 +66,7 @@ function App() {
                 </li>
                 <li>
                   <Link to="/cart" className="cart">
-                    Cart ({cart.length})
+                    Cart ({cart.reduce((acc, item) => acc + item.quantity, 0)})
                   </Link>
                 </li>
                 <li>
@@ -84,20 +96,17 @@ function App() {
                       alt={item.title}
                     />
                     <div className="card-body">
-                      <p className="card-text text-center fs-5">
-                        ${item.price}
-                      </p>
+                      <p className="card-text text-center fs-5">${item.price}</p>
                       <h5 className="card-title text-center">{item.title}</h5>
                       <div className="d-flex justify-content-center gap-2">
                         <button
                           className="btn btn-primary"
                           onClick={() => addToCart(item)}
-                          disabled={cart.some(
-                            (cartItem) => cartItem.id === item.id
-                          )}
                         >
                           {cart.some((cartItem) => cartItem.id === item.id)
-                            ? "Added to Cart"
+                            ? `+${cart.find(
+                                (cartItem) => cartItem.id === item.id
+                              ).quantity} in Cart`
                             : "+ Add to Cart"}
                         </button>
                         <button
@@ -144,7 +153,10 @@ function CartPage({ cart }) {
     alert("Your order has been placed successfully!");
   };
 
-  const totalPrice = cart.reduce((acc, item) => acc + item.price, 0);
+  const totalPrice = cart.reduce(
+    (acc, item) => acc + item.price * item.quantity,
+    0
+  );
 
   return (
     <div className="container mt-4">
@@ -168,6 +180,7 @@ function CartPage({ cart }) {
                 <div className="card-body">
                   <p className="card-text text-center fs-5">${item.price}</p>
                   <h5 className="card-title text-center">{item.title}</h5>
+                  <p className="text-center">Quantity: {item.quantity}</p>
                 </div>
               </div>
             ))}
